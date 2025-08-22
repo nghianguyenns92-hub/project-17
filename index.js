@@ -1,6 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const cors = require('cors');
+const path = require('path'); // Thêm module 'path' để xử lý đường dẫn tệp
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -9,21 +10,24 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Endpoint cho proxy
+// Endpoint để phục vụ tệp HTML tĩnh (index.html)
+// Khi người dùng truy cập vào URL gốc của bạn, máy chủ sẽ trả về tệp index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Endpoint cho proxy Gemini API, vẫn giữ nguyên
 app.post('/gemini-proxy', async (req, res) => {
     try {
-        // Lấy khóa API từ biến môi trường
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
             return res.status(500).json({ error: 'GEMINI_API_KEY is not configured.' });
         }
         
-        // Lấy prompt và config từ body request
         const { prompt, generationConfig } = req.body;
         
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
-        // Cấu hình payload cho API Gemini
         const payload = {
             contents: [{
                 role: "user",
@@ -31,7 +35,6 @@ app.post('/gemini-proxy', async (req, res) => {
             }],
         };
 
-        // Nếu có generationConfig, thêm vào payload
         if (generationConfig) {
             payload.generationConfig = generationConfig;
         }
