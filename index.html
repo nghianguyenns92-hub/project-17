@@ -206,6 +206,26 @@
             }
         };
 
+        // New function to process Gemini response
+        const processGeminiResponse = (rawResponse) => {
+            try {
+                const response = JSON.parse(rawResponse);
+                // Check for a story and update game state
+                if (response.story) {
+                    addMessage('ai', response.story);
+                    gameState.character = response.character;
+                    gameState.inventory = response.inventory;
+                    gameState.imagePrompt = response.image_prompt;
+                } else {
+                    // Fallback to plain text if no story field is found
+                    addMessage('ai', rawResponse);
+                }
+            } catch (e) {
+                // If JSON.parse fails, treat the response as plain text
+                addMessage('ai', rawResponse);
+            }
+        };
+
         const processUserInput = async () => {
             const userText = userInput.value.trim();
             if (userText === '') return;
@@ -225,15 +245,11 @@
                     `Bạn là một AI kể chuyện Tu Tiên. Hãy tạo ra một câu chuyện tương tác và nhập vai dựa trên nội dung sau, sử dụng JSON để định dạng câu trả lời. \n\n${prompt}`
                 );
 
-                const response = JSON.parse(rawResponse);
-                addMessage('ai', response.story);
-
-                // Cập nhật trạng thái trò chơi
-                gameState.character = response.character;
-                gameState.inventory = response.inventory;
-                gameState.imagePrompt = response.image_prompt;
+                processGeminiResponse(rawResponse);
+                
+                // Update chat history
                 gameState.chatHistory.push({ role: "user", text: userText });
-                gameState.chatHistory.push({ role: "ai", text: response.story });
+                gameState.chatHistory.push({ role: "ai", text: rawResponse }); // Lưu rawResponse để đảm bảo toàn vẹn dữ liệu
 
                 saveGame();
 
